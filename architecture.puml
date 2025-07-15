@@ -1,0 +1,33 @@
+@startuml capitalcoa-modular-monolith
+' Title for clarity when rendered
+title CapitalCoa – Modular Monolith Architecture
+
+' Authentication module
+package "Auth Module" {
+  [AuthController] --> [AuthService]
+}
+
+' Signals ingestion and processing
+package "Signals Module" {
+  [WebhookController] --> [SignalsService]
+}
+
+' Trade management
+package "Trades Module" {
+  [TradesController] --> [TradesService]
+}
+
+' Backtesting engine
+package "Backtests Module" {
+  [BacktestsController] --> [BacktestsService]
+}
+
+' Shared interceptor for audit logging
+[AuditInterceptor] .down.> [SignalsService]    : intercept calls
+[AuditInterceptor] .down.> [TradesService]     : intercept calls
+[AuditInterceptor] .down.> [BacktestsService]  : intercept calls
+
+' Background queue for long‑running tasks
+[WebhookController] --> [RedisQueue]           : enqueue backtest jobs
+
+@enduml

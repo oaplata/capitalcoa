@@ -1,0 +1,16 @@
+# Archivo: .cursorignore
+
+# Node modules y build
+node_modules/
+dist/
+build/
+coverage/
+
+# VS Code & sistema
+.vscode/
+.DS_Store
+npm-debug.log
+
+# Historial y caché de Cursorify
+.cursor-history/
+.cache/

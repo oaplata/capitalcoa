@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Asset {
+  ticker      String   @id
+  name        String
+  type        String
+  info_url    String?
+  market      String?
+  logo_url    String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  signals     Signal[]
+  trades      Trade[]
+  backtests   Backtest[]
+
+  @@map("assets")
+}
+
+model Signal {
+  id           Int      @id @default(autoincrement())
+  asset_ticker String
+  signal_type  SignalType
+  entry        Float
+  stop_loss    Float
+  target       Float
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  asset        Asset    @relation(fields: [asset_ticker], references: [ticker])
+  trades       Trade[]
+
+  @@map("signals")
+}
+
+model Trade {
+  id              Int        @id @default(autoincrement())
+  signal_id       Int?
+  asset_ticker    String
+  actual_entry    Float
+  entry_timestamp DateTime
+  actual_exit     Float?
+  exit_timestamp  DateTime?
+  status          TradeStatus
+  current_price   Float?
+  floating_pnl    Float?
+  realized_pnl    Float?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  // Relations
+  signal          Signal?    @relation(fields: [signal_id], references: [id])
+  asset           Asset      @relation(fields: [asset_ticker], references: [ticker])
+
+  @@map("trades")
+}
+
+model Backtest {
+  id              Int      @id @default(autoincrement())
+  asset_ticker    String
+  sma_period      Int
+  trend_periods   Int
+  atr_period      Int
+  stoploss_factor Float
+  profit_factor   Float
+  metrics         Json?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  asset           Asset    @relation(fields: [asset_ticker], references: [ticker])
+
+  @@map("backtests")
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  keys      Json
+  device    Json?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("push_subscriptions")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  timestamp  DateTime @default(now())
+  user_id    String?
+  action     AuditAction
+  entity_type String
+  entity_id  String
+  before_data Json?
+  after_data  Json?
+
+  @@map("audit_logs")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      UserRole @default(ADMIN)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum SignalType {
+  LONG
+  SHORT
+}
+
+enum TradeStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}

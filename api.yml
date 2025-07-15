@@ -1,0 +1,752 @@
+openapi: 3.0.3
+info:
+  title: CapitalCoa API
+  version: 1.0.0
+  description: >
+    REST API for CapitalCoa PWA: manage assets, signals, trades, backtests,
+    push subscriptions and audit logs. Uses JWT bearer auth.
+servers:
+  - url: https://api.yourdomain.com
+    description: Production server
+  - url: http://localhost:3000
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Asset:
+      type: object
+      required: [ticker, name, type]
+      properties:
+        ticker:
+          type: string
+          description: Unique symbol, primary key
+        name:
+          type: string
+          description: Full name of the asset
+        type:
+          type: string
+          description: Asset type (e.g., stock, ETF, crypto)
+        info_url:
+          type: string
+          format: uri
+          description: URL for more info about the asset
+        market:
+          type: string
+          description: Market identifier (e.g., NYSE, BINANCE)
+        logo_url:
+          type: string
+          format: uri
+          description: URL of the asset’s logo
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Signal:
+      type: object
+      required: [asset_ticker, signal_type, entry, stop_loss, target]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        asset_ticker:
+          type: string
+        signal_type:
+          type: string
+          enum: [long, short]
+        entry:
+          type: number
+        stop_loss:
+          type: number
+        target:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Trade:
+      type: object
+      required: [signal_id, asset_ticker, actual_entry, entry_timestamp, status]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        signal_id:
+          type: integer
+        asset_ticker:
+          type: string
+        actual_entry:
+          type: number
+        entry_timestamp:
+          type: string
+          format: date-time
+        actual_exit:
+          type: number
+          nullable: true
+        exit_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          enum: [open, closed, cancelled]
+        current_price:
+          type: number
+          nullable: true
+        floating_pnl:
+          type: number
+          nullable: true
+        realized_pnl:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Backtest:
+      type: object
+      required: [asset_ticker, sma_period, trend_periods, atr_period, stoploss_factor, profit_factor]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        asset_ticker:
+          type: string
+        sma_period:
+          type: integer
+        trend_periods:
+          type: integer
+        atr_period:
+          type: integer
+        stoploss_factor:
+          type: number
+        profit_factor:
+          type: number
+        metrics:
+          type: object
+          description: Performance metrics JSON (net_profit, max_drawdown, sharpe_ratio, etc.)
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PushSubscription:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        endpoint:
+          type: string
+          format: uri
+        keys:
+          type: object
+          properties:
+            p256dh:
+              type: string
+            auth:
+              type: string
+        device:
+          type: object
+          properties:
+            user_agent:
+              type: string
+            platform:
+              type: string
+            browser:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+        user_id:
+          type: string
+        action:
+          type: string
+          enum: [create, update, delete]
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+        before_data:
+          type: object
+        after_data:
+          type: object
+
+paths:
+  /api/auth/login:
+    post:
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+
+  /api/auth/logout:
+    post:
+      summary: Admin logout (invalidate token)
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logged out
+
+  /api/assets:
+    get:
+      summary: List all assets
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Asset list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asset'
+    post:
+      summary: Create a new asset
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Asset'
+      responses:
+        '201':
+          description: Asset created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+  /api/assets/{ticker}:
+    get:
+      summary: Get an asset by ticker
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: ticker
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+    put:
+      summary: Update an existing asset
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: ticker
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Asset'
+      responses:
+        '200':
+          description: Updated asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+    delete:
+      summary: Delete an asset
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: ticker
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Asset deleted
+
+  /api/signals:
+    get:
+      summary: List all signals
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Signal list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Signal'
+    post:
+      summary: Create a new signal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signal'
+      responses:
+        '201':
+          description: Signal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signal'
+
+  /api/signals/webhook:
+    post:
+      summary: Receive TradingView alert webhook
+      description: Validate no open trade exists, then create signal & notify
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signal'
+      responses:
+        '201':
+          description: Signal received
+
+  /api/signals/{id}:
+    get:
+      summary: Get signal by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Signal object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signal'
+    put:
+      summary: Update an existing signal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Signal'
+      responses:
+        '200':
+          description: Updated signal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signal'
+    delete:
+      summary: Delete a signal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Signal deleted
+
+  /api/trades:
+    get:
+      summary: List all trades
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, closed, cancelled]
+        - in: query
+          name: ticker
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Trade list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trade'
+    post:
+      summary: Create a new trade
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trade'
+      responses:
+        '201':
+          description: Trade created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+
+  /api/trades/{id}:
+    get:
+      summary: Get trade by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Trade object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+    put:
+      summary: Update an existing trade
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trade'
+      responses:
+        '200':
+          description: Updated trade
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trade'
+    delete:
+      summary: Delete a trade
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Trade deleted
+
+  /api/backtests:
+    get:
+      summary: List all backtests
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: ticker
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Backtest list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Backtest'
+    post:
+      summary: Create a new backtest
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Backtest'
+      responses:
+        '201':
+          description: Backtest created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backtest'
+
+  /api/backtests/{id}:
+    get:
+      summary: Get backtest by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Backtest object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backtest'
+    put:
+      summary: Update an existing backtest
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Backtest'
+      responses:
+        '200':
+          description: Updated backtest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Backtest'
+    delete:
+      summary: Delete a backtest
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Backtest deleted
+
+  /api/push-subscriptions:
+    get:
+      summary: List push subscriptions for current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Push subscription list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PushSubscription'
+    post:
+      summary: Create a new push subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscription'
+      responses:
+        '201':
+          description: Push subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushSubscription'
+
+  /api/push-subscriptions/{id}:
+    delete:
+      summary: Delete a push subscription
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Push subscription deleted
+
+  /api/audit-logs:
+    get:
+      summary: List audit logs with optional filters
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: entity_type
+          schema:
+            type: string
+        - in: query
+          name: user_id
+          schema:
+            type: string
+        - in: query
+          name: action
+          schema:
+            type: string
+            enum: [create, update, delete]
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Audit log list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+  
+  /api/audit-logs/{id}:
+    get:
+      summary: Get an audit log by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: AuditLog object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'

@@ -1,0 +1,42 @@
+# Archivo: .cursorrules
+
+# 1) Tipo de archivos a procesar
+filePatterns:
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.vue"
+  - "**/*.json"
+  - "**/*.yaml"
+  - "**/*.md"
+  - "**/*.puml"
+
+# 2) Convenciones de nombres
+namingConventions:
+  variables: camelCase
+  functions: camelCase
+  classes: PascalCase
+  files: kebab-case
+
+# 3) Reglas de formateo
+formatting:
+  indentSize: 2            # espacios por nivel
+  semicolons: always       # ; al final de líneas
+  quotes: double           # comillas dobles para strings
+
+# 4) Orden de grupos de imports (ejemplo TypeScript)
+importOrder:
+  - "^@nestjs/(.*)$"       # NestJS core
+  - "^@/(.*)$"             # Alias de proyecto
+  - "^[./]"                # Relativos
+
+# 5) Plantillas por defecto
+defaultTemplates:
+  - "nestjs.service"
+  - "nestjs.controller"
+  - "vue3.component"
+  - "plantuml.diagram"
+
+# 6) Otras reglas personalizadas
+rules:
+  maxLineLength: 100       # longitud máxima de línea
+  requireReturnType: true  # funciones TS deben declarar tipo de retorno
