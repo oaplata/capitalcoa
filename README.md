@@ -70,10 +70,27 @@ npm run prisma:migrate
 npm run start:dev
 ```
 
-### 4. Verificar instalación
+### 4. Configurar el frontend
+```bash
+# Instalar dependencias del frontend
+./scripts/frontend.sh install
+
+# Configurar variables de entorno
+./scripts/frontend.sh setup
+
+# Iniciar en desarrollo
+./scripts/frontend.sh dev
+```
+
+### 5. Verificar instalación
+- **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:3000
 - **Documentación Swagger**: http://localhost:3000/api/docs
 - **pgAdmin**: http://localhost:5050 (admin@capitalcoa.com / admin123)
+
+### Credenciales de prueba
+- **Usuario**: `admin@capitalcoa.com`
+- **Contraseña**: `sumian01150202`
 
 ## 🐳 Gestión de Docker
 
@@ -100,14 +117,45 @@ Usa el script incluido para gestionar los servicios:
 ./scripts/docker.sh cleanup
 ```
 
+## 🎨 Gestión del Frontend
+
+Usa el script incluido para gestionar el frontend:
+
+```bash
+# Instalar dependencias
+./scripts/frontend.sh install
+
+# Configurar entorno
+./scripts/frontend.sh setup
+
+# Iniciar desarrollo
+./scripts/frontend.sh dev
+
+# Construir para producción
+./scripts/frontend.sh build
+
+# Ejecutar linting
+./scripts/frontend.sh lint
+
+# Formatear código
+./scripts/frontend.sh format
+
+# Verificar tipos
+./scripts/frontend.sh type-check
+
+# Limpiar archivos
+./scripts/frontend.sh clean
+```
+
 ## 📊 Servicios Disponibles
 
 | Servicio | Puerto | Descripción |
 |----------|--------|-------------|
+| Frontend | 5173 | Aplicación web Vue 3 |
+| Backend API | 3000 | API REST de CapitalCoa |
 | PostgreSQL | 5432 | Base de datos principal |
 | Redis | 6379 | Cache y colas |
 | pgAdmin | 5050 | Gestión de base de datos |
-| Backend API | 3000 | API REST de CapitalCoa |
 
 ## 🔧 Variables de Entorno
 
@@ -132,10 +180,25 @@ PORT=3000
 NODE_ENV=development
 ```
 
+### Frontend (.env.local)
+```env
+VITE_API_URL=http://localhost:3000
+VITE_APP_TITLE=CapitalCoa
+VITE_APP_VERSION=1.0.0
+```
+
 ## 📁 Estructura del Proyecto
 
 ```
 capitalcoa/
+├── frontend/                # Aplicación Vue 3
+│   ├── src/
+│   │   ├── views/           # Vistas de la aplicación
+│   │   ├── components/      # Componentes reutilizables
+│   │   ├── stores/          # Stores de Pinia
+│   │   ├── services/        # Servicios de API
+│   │   └── plugins/         # Plugins (Vuetify)
+│   └── package.json
 ├── backend/                 # API NestJS
 │   ├── src/
 │   │   ├── modules/         # Módulos de la aplicación
@@ -169,6 +232,29 @@ npm run prisma:studio
 # Tests
 npm run test
 npm run test:e2e
+```
+
+### Frontend
+```bash
+cd frontend
+
+# Desarrollo
+npm run dev
+
+# Construir para producción
+npm run build
+
+# Previsualizar build
+npm run preview
+
+# Linting
+npm run lint
+
+# Formatear código
+npm run format
+
+# Verificar tipos
+npm run type-check
 ```
 
 ### Docker

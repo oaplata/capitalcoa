@@ -36,4 +36,8 @@ export class AuthService {
       token_type: 'bearer',
     };
   }
+
+  profile(user: User) {
+    return user;
+  }
 }
