@@ -62,7 +62,7 @@ export const assetsApi = {
   getAll: (params?: any) => apiClient.get('/assets', { params }),
   getById: (ticker: string) => apiClient.get(`/assets/${ticker}`),
   create: (asset: any) => apiClient.post('/assets', asset),
-  update: (ticker: string, asset: any) => apiClient.patch(`/assets/${ticker}`, asset),
+  update: (ticker: string, asset: any) => apiClient.put(`/assets/${ticker}`, asset),
   delete: (ticker: string) => apiClient.delete(`/assets/${ticker}`),
 };
 

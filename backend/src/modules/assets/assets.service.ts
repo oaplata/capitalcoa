@@ -86,33 +86,46 @@ export class AssetsService {
   }
 
   async update(ticker: string, updateAssetDto: UpdateAssetDto) {
-    // Verificar si el asset existe
-    const existingAsset = await this.prisma.asset.findUnique({
-      where: { ticker },
-    });
-
-    if (!existingAsset) {
-      throw new NotFoundException('Asset not found');
-    }
-
-    // Verificar si el nuevo ticker ya existe (si se está actualizando)
-    if (updateAssetDto.ticker && updateAssetDto.ticker !== ticker) {
-      const assetWithSameTicker = await this.prisma.asset.findUnique({
-        where: { ticker: updateAssetDto.ticker },
+    console.log('AssetsService.update called with:', { ticker, updateAssetDto });
+    
+    try {
+      // Verificar si el asset existe
+      const existingAsset = await this.prisma.asset.findUnique({
+        where: { ticker },
       });
 
-      if (assetWithSameTicker) {
-        throw new ConflictException('Asset with this ticker already exists');
+      if (!existingAsset) {
+        console.log('Asset not found:', ticker);
+        throw new NotFoundException('Asset not found');
       }
+
+      console.log('Existing asset found:', existingAsset);
+
+      // Verificar si el nuevo ticker ya existe (si se está actualizando)
+      if (updateAssetDto.ticker && updateAssetDto.ticker !== ticker) {
+        const assetWithSameTicker = await this.prisma.asset.findUnique({
+          where: { ticker: updateAssetDto.ticker },
+        });
+
+        if (assetWithSameTicker) {
+          console.log('Asset with same ticker already exists:', updateAssetDto.ticker);
+          throw new ConflictException('Asset with this ticker already exists');
+        }
+      }
+
+      // Actualizar asset
+      console.log('Updating asset with data:', updateAssetDto);
+      const asset = await this.prisma.asset.update({
+        where: { ticker },
+        data: updateAssetDto,
+      });
+
+      console.log('Asset updated successfully:', asset);
+      return asset;
+    } catch (error) {
+      console.error('Error in AssetsService.update:', error);
+      throw error;
     }
-
-    // Actualizar asset
-    const asset = await this.prisma.asset.update({
-      where: { ticker },
-      data: updateAssetDto,
-    });
-
-    return asset;
   }
 
   async remove(ticker: string) {

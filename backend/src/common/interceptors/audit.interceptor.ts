@@ -38,18 +38,25 @@ export class AuditInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(async (response) => {
         try {
-          await this.prisma.auditLog.create({
-            data: {
-              timestamp,
-              user_id: user?.userId?.toString() || 'system',
-              action,
-              entity_type: entityType,
-              entity_id: this.getEntityId(params, body, response),
-              before_data: this.getBeforeData(method, body, params),
-              after_data: this.getAfterData(method, response),
-            },
-          });
+          // Solo crear log de auditoría si la operación fue exitosa
+          if (
+            response &&
+            (response.statusCode === undefined || response.statusCode < 400)
+          ) {
+            await this.prisma.auditLog.create({
+              data: {
+                timestamp,
+                user_id: user?.userId?.toString() || 'system',
+                action,
+                entity_type: entityType,
+                entity_id: this.getEntityId(params, body, response),
+                before_data: this.getBeforeData(method, body, params),
+                after_data: this.getAfterData(method, response),
+              },
+            });
+          }
         } catch (error) {
+          // No permitir que errores de auditoría afecten la respuesta principal
           console.error('Error creating audit log:', error);
         }
       }),
@@ -80,10 +87,18 @@ export class AuditInterceptor implements NestInterceptor {
   }
 
   private getEntityId(params: any, body: any, response: any): string {
+    // Para assets, usar ticker como identificador
+    if (params?.ticker) return params.ticker.toString();
+    if (body?.ticker) return body.ticker.toString();
+    if (response?.ticker) return response.ticker.toString();
+    if (response?.data?.ticker) return response.data.ticker.toString();
+
+    // Para otras entidades, usar id
     if (params?.id) return params.id.toString();
     if (body?.id) return body.id.toString();
     if (response?.id) return response.id.toString();
     if (response?.data?.id) return response.data.id.toString();
+
     return 'unknown';
   }
 

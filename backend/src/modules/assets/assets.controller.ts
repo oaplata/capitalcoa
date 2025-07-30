@@ -3,12 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Query,
   UseGuards,
-  UseInterceptors,
+  Put,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,13 +20,11 @@ import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { QueryAssetDto } from './dto/query-asset.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { AuditInterceptor } from '../../common/interceptors/audit.interceptor';
 
 @ApiTags('assets')
 @ApiBearerAuth()
 @Controller('api/assets')
 @UseGuards(JwtAuthGuard)
-@UseInterceptors(AuditInterceptor)
 export class AssetsController {
   constructor(private readonly assetsService: AssetsService) {}
 
@@ -68,7 +65,7 @@ export class AssetsController {
     return this.assetsService.getAssetStats(ticker);
   }
 
-  @Patch(':ticker')
+  @Put(':ticker')
   @ApiOperation({ summary: 'Update an asset' })
   @ApiResponse({ status: 200, description: 'Asset updated successfully' })
   @ApiResponse({ status: 404, description: 'Asset not found' })
@@ -80,7 +77,28 @@ export class AssetsController {
     @Param('ticker') ticker: string,
     @Body() updateAssetDto: UpdateAssetDto,
   ) {
-    return this.assetsService.update(ticker, updateAssetDto);
+    console.log('Update asset request:', { ticker, updateAssetDto });
+    try {
+      return this.assetsService.update(ticker, updateAssetDto);
+    } catch (error) {
+      console.error('Controller error:', error);
+      throw error;
+    }
+  }
+
+  @Post(':ticker/test-update')
+  @ApiOperation({ summary: 'Test update endpoint (temporary)' })
+  testUpdate(
+    @Param('ticker') ticker: string,
+    @Body() updateAssetDto: UpdateAssetDto,
+  ) {
+    console.log('Test update request:', { ticker, updateAssetDto });
+    return {
+      message: 'Test successful',
+      ticker,
+      data: updateAssetDto,
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Delete(':ticker')

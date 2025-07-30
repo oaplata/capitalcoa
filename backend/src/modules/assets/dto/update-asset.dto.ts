@@ -15,7 +15,7 @@ export class UpdateAssetDto extends PartialType(CreateAssetDto) {
 
   @ApiPropertyOptional({ description: 'Nueva URL de información' })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_protocol: false })
   info_url?: string;
 
   @ApiPropertyOptional({ description: 'Nuevo mercado' })
@@ -25,6 +25,6 @@ export class UpdateAssetDto extends PartialType(CreateAssetDto) {
 
   @ApiPropertyOptional({ description: 'Nueva URL del logo' })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_protocol: false })
   logo_url?: string;
 }

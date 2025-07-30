@@ -916,6 +916,21 @@ onMounted(() => {
   opacity: 0.5;
 }
 
+/* Título del toolbar adaptativo */
+.toolbar-dashboard :deep(.v-toolbar-title) {
+  color: var(--on-surface) !important;
+  font-weight: 600;
+}
+
+/* Asegurar que todos los elementos del toolbar usen colores del tema */
+.toolbar-dashboard :deep(.v-btn) {
+  color: var(--on-surface) !important;
+}
+
+.toolbar-dashboard :deep(.v-btn:hover) {
+  background-color: rgba(var(--primary), 0.1) !important;
+}
+
 /* Asegurar que los elementos de actividad tengan colores correctos */
 .activity-item {
   border-bottom: 1px solid var(--card-border);
