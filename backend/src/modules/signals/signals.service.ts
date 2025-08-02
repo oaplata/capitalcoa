@@ -27,6 +27,9 @@ export class SignalsService {
       );
     }
 
+    // Validar precios según el tipo de señal
+    this.validateSignalPrices(createSignalDto);
+
     // Crear la señal
     const signal = await this.prisma.signal.create({
       data: createSignalDto,
@@ -36,6 +39,7 @@ export class SignalsService {
             ticker: true,
             name: true,
             type: true,
+            logo_url: true,
           },
         },
       },
@@ -69,6 +73,7 @@ export class SignalsService {
               ticker: true,
               name: true,
               type: true,
+              logo_url: true,
             },
           },
           trades: {
@@ -105,6 +110,7 @@ export class SignalsService {
             ticker: true,
             name: true,
             type: true,
+            logo_url: true,
           },
         },
         trades: {
@@ -150,6 +156,17 @@ export class SignalsService {
         );
       }
     }
+
+    // Combinar datos existentes con los nuevos para validación
+    const signalToValidate = {
+      signal_type: updateSignalDto.signal_type || existingSignal.signal_type,
+      entry: updateSignalDto.entry || existingSignal.entry,
+      target: updateSignalDto.target || existingSignal.target,
+      stop_loss: updateSignalDto.stop_loss || existingSignal.stop_loss,
+    };
+
+    // Validar precios según el tipo de señal
+    this.validateSignalPrices(signalToValidate);
 
     // Actualizar señal
     const signal = await this.prisma.signal.update({
@@ -276,5 +293,43 @@ export class SignalsService {
       shortPercentage:
         totalSignals > 0 ? (shortSignals / totalSignals) * 100 : 0,
     };
+  }
+
+  private validateSignalPrices(signalDto: CreateSignalDto | UpdateSignalDto) {
+    const { signal_type, entry, target, stop_loss } = signalDto;
+
+    // Solo validar si tenemos todos los valores necesarios
+    if (
+      !signal_type ||
+      entry === undefined ||
+      target === undefined ||
+      stop_loss === undefined
+    ) {
+      return;
+    }
+
+    if (signal_type === 'LONG') {
+      if (entry >= target) {
+        throw new ConflictException(
+          'Entry price must be less than target price for LONG signals.',
+        );
+      }
+      if (entry >= stop_loss) {
+        throw new ConflictException(
+          'Entry price must be less than stop loss for LONG signals.',
+        );
+      }
+    } else if (signal_type === 'SHORT') {
+      if (entry <= target) {
+        throw new ConflictException(
+          'Entry price must be greater than target price for SHORT signals.',
+        );
+      }
+      if (entry <= stop_loss) {
+        throw new ConflictException(
+          'Entry price must be greater than stop loss for SHORT signals.',
+        );
+      }
+    }
   }
 }

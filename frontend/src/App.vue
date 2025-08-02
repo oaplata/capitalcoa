@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { onMounted } from 'vue'
+import { AuthenticatedLayout, GuestLayout } from '@/layouts'
 
 const authStore = useAuthStore()
 
@@ -13,6 +14,14 @@ onMounted(() => {
 
 <template>
   <v-app>
-    <RouterView />
+    <!-- Layout para usuarios autenticados -->
+    <AuthenticatedLayout v-if="authStore.isAuthenticated">
+      <RouterView />
+    </AuthenticatedLayout>
+    
+    <!-- Layout para usuarios no autenticados -->
+    <GuestLayout v-else>
+      <RouterView />
+    </GuestLayout>
   </v-app>
 </template>

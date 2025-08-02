@@ -1,21 +1,7 @@
 <template>
   <div class="assets-page">
-    <!-- Header del Assets con animaciones -->
-    <v-toolbar title="Gestión de Activos" class="toolbar-assets">
-      <v-spacer></v-spacer>
-      <ThemeSelector />
-      <v-btn
-        :color="themeStore.currentTheme.colors.primary"
-        variant="outlined"
-        @click="handleLogout"
-        :loading="authStore.isLoading"
-      >
-        <v-icon>mdi-logout</v-icon>
-      </v-btn>
-    </v-toolbar>
-
     <!-- Filtros y búsqueda -->
-    <v-container fluid>
+    <!-- <v-container fluid>
       <v-card class="filters-card fade-in-up" elevation="2">
         <v-card-text>
           <v-row align="center" no-gutters>
@@ -34,7 +20,7 @@
           </v-row>
         </v-card-text>
       </v-card>
-    </v-container>
+    </v-container> -->
 
     <!-- Contenido principal -->
     <v-container fluid>
@@ -53,24 +39,23 @@
       />
 
       <!-- Vista de tabla con grupos -->
+      <div class="d-flex justify-end">
+        <v-btn
+          :color="themeStore.currentTheme.colors.primary"
+          @click="openCreateDialog"
+          :loading="assetsStore.isLoading"
+          variant="text"
+          class="add-asset-btn"
+        >
+          <v-icon left>mdi-plus</v-icon>
+          Añadir Activo
+        </v-btn>
+      </div>
       <div v-if="!assetsStore.isLoading && assetsStore.hasAssets" class="table-view">
-        <!-- Header de la tabla -->
-        <div class="table-header">
-          <div class="header-content">
-            <div class="header-left">
-              <h3 class="header-title">Ticker</h3>
-              <v-icon size="16" class="header-icon">mdi-arrow-up</v-icon>
-            </div>
-            <div class="header-right">
-              <span class="header-count">{{ assetsStore.assets.length }} símbolos</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Grupos de activos -->
         <div class="asset-groups">
           <div 
-            v-for="(group, groupIndex) in groupedAssets" 
+            v-for="group in groupedAssets" 
             :key="group.type" 
             class="asset-group"
           >
@@ -136,49 +121,20 @@
 
                   <!-- Acciones -->
                   <div class="asset-actions">
-                    <v-menu>
-                      <template #activator="{ props }">
-                        <v-btn
-                          icon
-                          variant="text"
-                          v-bind="props"
-                          size="small"
-                          class="action-btn"
-                        >
-                          <v-icon size="18">mdi-dots-vertical</v-icon>
-                        </v-btn>
-                      </template>
-                      <v-list class="action-menu">
-                        <v-list-item
-                          @click="openEditDialog(asset)"
-                          class="action-item"
-                        >
-                          <template #prepend>
-                            <v-icon 
-                              :color="themeStore.currentTheme.colors.primary"
-                              size="20"
-                            >
-                              mdi-pencil
-                            </v-icon>
-                          </template>
-                          <v-list-item-title class="action-text">Editar</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item
-                          @click="openDeleteDialog(asset)"
-                          class="action-item"
-                        >
-                          <template #prepend>
-                            <v-icon 
-                              color="error"
-                              size="20"
-                            >
-                              mdi-delete
-                            </v-icon>
-                          </template>
-                          <v-list-item-title class="action-text">Eliminar</v-list-item-title>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
+                    <v-btn
+                      icon
+                      variant="text"
+                      size="small"
+                      class="action-btn"
+                      @click="openEditDialog(asset)"
+                    >
+                      <v-icon 
+                        :color="themeStore.currentTheme.colors.primary"
+                        size="18"
+                      >
+                        mdi-pencil
+                      </v-icon>
+                    </v-btn>
                   </div>
                 </div>
               </div>
@@ -243,11 +199,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
 import { useAssetsStore } from '@/stores/assets';
 import { useThemeStore } from '@/stores/theme';
-import ThemeSelector from '@/components/ThemeSelector.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
 import AssetForm from '@/components/AssetForm.vue';
@@ -255,15 +208,10 @@ import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue';
 import type { Asset, AssetType, Market } from '@/types/asset';
 
 // Composables
-const router = useRouter();
-const authStore = useAuthStore();
 const assetsStore = useAssetsStore();
 const themeStore = useThemeStore();
 
 // Refs
-const searchQuery = ref('');
-const selectedType = ref('');
-const selectedMarket = ref('');
 const showAssetForm = ref(false);
 const showDeleteDialog = ref(false);
 const selectedAsset = ref<Asset | null>(null);
@@ -290,17 +238,6 @@ const markets: Market[] = [
   { value: 'KRAKEN', label: 'Kraken', icon: 'mdi-currency-btc' }
 ];
 
-// Computed
-const assetTypeOptions = computed(() => [
-  { value: '', label: 'Todos los tipos' },
-  ...assetTypes
-]);
-
-const marketOptions = computed(() => [
-  { value: '', label: 'Todos los mercados' },
-  ...markets
-]);
-
 // Computed para agrupar assets
 const groupedAssets = computed(() => {
   if (!assetsStore.assets || assetsStore.assets.length === 0) {
@@ -321,31 +258,6 @@ const groupedAssets = computed(() => {
 });
 
 // Methods
-const handleLogout = async () => {
-  try {
-    await authStore.logout();
-    await router.push('/login');
-  } catch (error) {
-    console.error('Error en logout:', error);
-  }
-};
-
-const handleSearch = () => {
-  assetsStore.setFilters({ ticker: searchQuery.value });
-};
-
-const clearSearch = () => {
-  searchQuery.value = '';
-  assetsStore.setFilters({ ticker: '' });
-};
-
-const handleFilter = () => {
-  const filters: any = {};
-  if (selectedType.value) filters.type = selectedType.value;
-  if (selectedMarket.value) filters.market = selectedMarket.value;
-  assetsStore.setFilters(filters);
-};
-
 const openCreateDialog = () => {
   selectedAsset.value = null;
   showAssetForm.value = true;
@@ -418,12 +330,6 @@ const formatDate = (dateString: string) => {
 
 // Lifecycle
 onMounted(() => {
-  // Verificar autenticación
-  if (!authStore.isAuthenticated) {
-    router.push('/login');
-    return;
-  }
-  
   // Cargar activos
   assetsStore.fetchAssets();
   
@@ -455,63 +361,10 @@ watch(() => assetsStore.assets, (assets) => {
   background: var(--background);
 }
 
-.toolbar-assets {
-  background: var(--card-bg);
-  border-bottom: 1px solid var(--card-border);
-}
-
-/* Título del toolbar adaptativo */
-.toolbar-assets :deep(.v-toolbar-title) {
-  color: var(--on-surface) !important;
-  font-weight: 600;
-}
-
-/* Asegurar que todos los elementos del toolbar usen colores del tema */
-.toolbar-assets :deep(.v-btn) {
-  color: var(--on-surface) !important;
-}
-
-.toolbar-assets :deep(.v-btn:hover) {
-  background-color: rgba(var(--primary), 0.1) !important;
-}
-
-.filters-section {
-  padding-top: 16px;
-  padding-bottom: 16px;
-}
-
 .filters-card {
   border-radius: 16px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-}
-
-.search-field :deep(.v-field__input),
-.filter-field :deep(.v-field__input) {
-  color: var(--on-surface);
-}
-
-.search-field :deep(.v-label),
-.filter-field :deep(.v-label),
-.search-field :deep(.v-field-label),
-.filter-field :deep(.v-field-label) {
-  color: var(--on-surface);
-  opacity: 0.7;
-}
-
-.search-field :deep(.v-field__outline),
-.filter-field :deep(.v-field__outline) {
-  color: var(--card-border);
-}
-
-.search-field :deep(.v-field--focused .v-field__outline),
-.filter-field :deep(.v-field--focused .v-field__outline) {
-  color: var(--primary);
-}
-
-.search-field :deep(.v-select__selection),
-.filter-field :deep(.v-select__selection) {
-  color: var(--on-surface);
 }
 
 .loading-container {
@@ -581,15 +434,22 @@ watch(() => assetsStore.assets, (assets) => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-top: none;
-  border-radius: 0 0 12px 12px;
+  border-bottom: none;
+  border-radius: 12px 12px 12px 12px;
+  overflow: hidden;
 }
 
 .asset-group {
   border-bottom: 1px solid var(--card-border);
 }
 
+.asset-group:first-child {
+  border-top: 1px solid var(--card-border);
+  border-radius: 12px 12px 0 0;
+}
+
 .asset-group:last-child {
-  border-bottom: none;
+  border-radius: 0 0 12px 12px;
 }
 
 /* Header del grupo */
@@ -832,11 +692,6 @@ watch(() => assetsStore.assets, (assets) => {
 
 /* Responsive */
 @media (max-width: 960px) {
-  .filters-section {
-    padding-top: 12px;
-    padding-bottom: 12px;
-  }
-  
   .table-view {
     padding-top: 12px;
   }
@@ -866,10 +721,6 @@ watch(() => assetsStore.assets, (assets) => {
 }
 
 @media (max-width: 600px) {
-  .filters-section {
-    padding: 8px;
-  }
-  
   .table-view {
     padding: 12px;
   }
@@ -912,5 +763,9 @@ watch(() => assetsStore.assets, (assets) => {
   .group-count {
     font-size: 12px;
   }
+}
+
+.add-asset-btn {
+  text-transform: none;
 }
 </style> 

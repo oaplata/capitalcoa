@@ -1,5 +1,5 @@
 <template>
-  <div class="login-page">
+  <div class="login-page pt-12">
     <!-- Partículas de fondo -->
     <div class="financial-particles">
       <div class="particle" v-for="i in 9" :key="i"></div>
@@ -147,11 +147,6 @@
       </v-row>
     </v-container>
 
-    <!-- Selector de temas flotante -->
-    <div class="theme-selector-fixed">
-      <ThemeSelector />
-    </div>
-
     <!-- Loading overlay -->
     <LoadingSpinner
       v-if="authStore.isLoading"
@@ -170,7 +165,6 @@ import { useAuthStore } from '@/stores/auth';
 import { useThemeStore } from '@/stores/theme';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
-import ThemeSelector from '@/components/ThemeSelector.vue';
 
 // Composables
 const router = useRouter();
@@ -353,13 +347,6 @@ onMounted(async () => {
   transform: translateY(-2px);
 }
 
-.theme-selector-fixed {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-}
-
 .help-dialog {
   border-radius: 16px;
 }
@@ -442,11 +429,6 @@ onMounted(async () => {
   .login-card {
     margin: 16px;
     border-radius: 16px;
-  }
-  
-  .theme-selector-fixed {
-    top: 10px;
-    right: 10px;
   }
   
   .logo-icon {
@@ -609,40 +591,6 @@ onMounted(async () => {
 .login-card :deep(.error-alert .v-alert__text) {
   color: var(--on-surface);
   opacity: 0.9;
-}
-
-/* Asegurar que el ThemeSelector tenga los colores correctos */
-.theme-selector-fixed :deep(.theme-toggle-btn) {
-  background: var(--card-bg);
-  color: var(--primary);
-  border: 1px solid var(--card-border);
-}
-
-.theme-selector-fixed :deep(.theme-toggle-btn:hover) {
-  background: var(--primary);
-  color: var(--on-surface);
-}
-
-.theme-selector-fixed :deep(.theme-menu) {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-}
-
-.theme-selector-fixed :deep(.theme-menu .v-card-title) {
-  color: var(--on-surface);
-}
-
-.theme-selector-fixed :deep(.theme-menu .v-card-text) {
-  color: var(--on-surface);
-}
-
-.theme-selector-fixed :deep(.theme-menu .theme-name) {
-  color: var(--on-surface);
-}
-
-.theme-selector-fixed :deep(.theme-menu .theme-description) {
-  color: var(--on-surface);
-  opacity: 0.7;
 }
 
 /* Asegurar que el LoadingSpinner tenga los colores correctos */
